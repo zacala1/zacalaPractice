@@ -8,7 +8,7 @@ zacala Practice
 
 - Env : Python
 
-[참조 소스](https://github.com/dsouzawilbur/Scripts/blob/master/Change_Photo_Taken_Time.py)
+[참조 소스](https://github.com/dsouzawilbur/Scripts)
 
 ## GrpcExample
 
