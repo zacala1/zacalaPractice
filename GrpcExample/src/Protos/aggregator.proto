@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
+
+option csharp_namespace = "GrpcModel.ProtoFirst";
+
+import "weather.proto";
+package aggregate.v1;
+
+service Aggregator {
+  //rpc AccumulateCount (stream count.CounterRequest) returns (count.CounterReply);
+}

@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+option csharp_namespace = "GrpcModel.ProtoFirst";
+
+package weather.v1;
+
+service WeatherForecaster {
+  // Unary Call
+  rpc ResetForecastUnary (google.protobuf.Empty) returns (ResetForcastResponse);
+  // Client Stream Call
+  rpc SetForecastStream (stream SetForecastRequest) returns (SetForecastResponse);
+  // Server Stream Call
+  rpc GetForecastStream (GetForecastRequest) returns (stream GetForecastResponse);
+}
+
+message ResetForcastResponse {
+	repeated WeatherForecast forecasts = 1;
+}
+
+message SetForecastRequest {
+	WeatherForecast forecast = 1;
+}
+
+message SetForecastResponse {
+	int32 count = 1;
+}
+
+message GetForecastRequest {
+	string location = 1;
+}
+
+message GetForecastResponse {
+	repeated WeatherForecast forecasts = 1;
+}
+
+// Model
+message WeatherForecast {
+  google.protobuf.Timestamp date = 1;
+  int32 temperatureC = 2;
+  string location = 3;
+  string summary = 4;
+}
