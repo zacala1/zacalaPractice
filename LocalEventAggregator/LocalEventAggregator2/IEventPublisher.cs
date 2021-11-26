@@ -12,6 +12,6 @@ namespace LocalEventAggregator
         /// Publishs an item to the System.Threading.Tasks.Dataflow.ITargetBlock`1.
         /// </summary>
         /// <param name="data">The item being offered to the target.</param>
-        void Publish(T data);
+        void Broadcast(T data);
     }
 }

@@ -11,7 +11,7 @@ namespace LocalEventAggregator
     /// </summary>
     internal class EventTaskScheduler : TaskScheduler
     {
-        public static readonly EventTaskScheduler Scheduler = new();
+        public static readonly EventTaskScheduler Scheduler = new EventTaskScheduler();
 
         protected override void QueueTask(Task task)
         {

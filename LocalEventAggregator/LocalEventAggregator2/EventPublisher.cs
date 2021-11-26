@@ -14,7 +14,7 @@ namespace LocalEventAggregator
     /// <typeparam name="T">The type of data the <see cref="EventBase{T}"/> will send</typeparam>
     public sealed class EventPublisher<T> : IEventPublisher<T>, IDisposable
     {
-        private readonly IDisposable link;
+        private IDisposable link;
 
         internal BroadcastBlock<T> BroadcastBlock;
 
@@ -41,7 +41,7 @@ namespace LocalEventAggregator
             GC.SuppressFinalize(this);
         }
 
-        public void Publish(T data)
+        public void Broadcast(T data)
         {
             BroadcastBlock.Post(data);
         }

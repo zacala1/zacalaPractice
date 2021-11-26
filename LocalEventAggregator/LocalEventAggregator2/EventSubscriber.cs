@@ -15,14 +15,14 @@ namespace LocalEventAggregator
     /// <typeparam name="T">The type of data the <see cref="EventBase{T}"/> will send</typeparam>
     public sealed class EventSubscriber<T> : EventSubscriber, IEventSubscriber<T>, IDisposable
     {
-        private readonly IDisposable link;
+        private IDisposable link;
 
         internal BufferBlock<T> BufferBlock;
 
         public EventBase<T> Key { get; private set; }
 
         // ReSharper disable once StaticMemberInGenericType
-        private static readonly DataflowBlockOptions CapacityOptions = new()
+        private static readonly DataflowBlockOptions CapacityOptions = new DataflowBlockOptions
         {
             BoundedCapacity = 1,
             TaskScheduler = EventTaskScheduler.Scheduler,
@@ -83,7 +83,7 @@ namespace LocalEventAggregator
         {
             if (BufferBlock.Count == 0)
             {
-                data = default;
+                data = default(T);
                 return false;
             }
 
@@ -116,7 +116,8 @@ namespace LocalEventAggregator
         public void Reset()
         {
             //consume all in one go
-            BufferBlock.TryReceiveAll(out _);
+            IList<T> result;
+            BufferBlock.TryReceiveAll(out result);
         }
 
         ~EventSubscriber()
@@ -138,7 +139,8 @@ namespace LocalEventAggregator
 
         internal override bool TryReceiveOneInternal(out object obj)
         {
-            if (!TryReceive(out var res))
+            T res;
+            if (!TryReceive(out res))
             {
                 obj = null;
                 return false;

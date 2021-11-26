@@ -10,13 +10,15 @@ namespace LocalEventAggregator
     /// Creates a new EventKey used to broadcast T type events.
     /// </summary>
     /// <typeparam name="T">The data type of the event you wish to send</typeparam>
-    public abstract class EventBase<T> : EventKeyBase, IDisposable
+    public abstract class EventBase<T> : EventKeyBase, IEventSubscribeHandler<T>, IDisposable
     {
         private readonly BroadcastBlock<T> broadcastBlock;
+        private readonly IEventSubscribeHandler<T> eventSubscribeHandler;
 
         public EventBase()
         {
             broadcastBlock = new BroadcastBlock<T>(null, new DataflowBlockOptions { TaskScheduler = EventTaskScheduler.Scheduler });
+            eventSubscribeHandler = new EventSubscribeHandler<T>(this);
         }
 
         ~EventBase()
@@ -26,6 +28,7 @@ namespace LocalEventAggregator
 
         public void Dispose()
         {
+            eventSubscribeHandler.Dispose();
             GC.SuppressFinalize(this);
         }
 
@@ -69,7 +72,7 @@ namespace LocalEventAggregator
         /// Posts an item to the System.Threading.Tasks.Dataflow.ITargetBlock`1.
         /// </summary>
         /// <param name="data">The item being offered to the target.</param>
-        public void Broadcast(T data)
+        public void Publish(T data)
         {
             broadcastBlock.Post(data);
         }
@@ -93,15 +96,24 @@ namespace LocalEventAggregator
             return new EventSubscriber<T>(this, options);
         }
 
-        /// <summary>
-        /// Gets the event subscribe handeler
-        /// </summary>
-        /// <param name="action">handled action</param>
-        /// <param name="options"></param>
-        /// <returns></returns>
-        public IEventSubscribeHandler<T> GetSubscribeHandle(Action<T> action, EventReceiverOptions options = EventReceiverOptions.None)
+        public SubscriptionToken Subscribe(Action<T> action)
         {
-            return new EventSubscribeHandler<T>(this, action, options);
+            return eventSubscribeHandler.Subscribe(action);
+        }
+
+        public void Unsubscribe(SubscriptionToken token)
+        {
+            eventSubscribeHandler.Unsubscribe(token);
+        }
+
+        public void Unsubscribe(Action<T> subscriber)
+        {
+            eventSubscribeHandler.Unsubscribe(subscriber);
+        }
+
+        public bool Contains(Action<T> subscriber)
+        {
+            return eventSubscribeHandler.Contains(subscriber);
         }
     }
 
