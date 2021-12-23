@@ -22,7 +22,7 @@ namespace LocalEventAggregator
         public EventBase<T> Key { get; private set; }
 
         // ReSharper disable once StaticMemberInGenericType
-        private static readonly DataflowBlockOptions CapacityOptions = new()
+        private static readonly DataflowBlockOptions CapacityOptions = new DataflowBlockOptions()
         {
             BoundedCapacity = 1,
             TaskScheduler = EventTaskScheduler.Scheduler,

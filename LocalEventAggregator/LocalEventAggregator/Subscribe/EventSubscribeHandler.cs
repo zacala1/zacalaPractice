@@ -12,7 +12,7 @@ namespace LocalEventAggregator
     /// Event subscribe handler. It must be disposed when it unsubscribes or deletes
     /// </summary>
     /// <typeparam name="T">The type of data the <see cref="EventBase{T}"/> will send</typeparam>
-    public sealed class EventSubscribeHandler<T> : IEventSubscribeHandler<T>, IDisposable
+    public class EventSubscribeHandler<T> : IEventSubscribeHandler<T>, IDisposable
     {
         private readonly IDisposable link;
 
@@ -28,7 +28,7 @@ namespace LocalEventAggregator
         public EventBase<T> Key { get; private set; }
 
         // ReSharper disable once StaticMemberInGenericType
-        private static readonly ExecutionDataflowBlockOptions CapacityOptions = new()
+        private static readonly ExecutionDataflowBlockOptions CapacityOptions = new ExecutionDataflowBlockOptions()
         {
             BoundedCapacity = 1,
             TaskScheduler = EventTaskScheduler.Scheduler,
@@ -59,7 +59,7 @@ namespace LocalEventAggregator
 
         private void InternalInvoke(T data)
         {
-            List<Action<T>> actionList = new();
+            List<Action<T>> actionList = new List<Action<T>>();
             lock (Subscriptions)
             {
                 foreach (var subscription in Subscriptions)

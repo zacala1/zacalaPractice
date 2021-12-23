@@ -19,7 +19,7 @@ namespace LocalEventAggregator
         /// Removes the subscriber matching the <see cref="SubscriptionToken"/>.
         /// </summary>
         /// <param name="token">The <see cref="SubscriptionToken"/> returned by <see cref="EventBase{T}"/> while subscribing to the event.</param>
-        public void Unsubscribe(SubscriptionToken token);
+        void Unsubscribe(SubscriptionToken token);
 
         /// <summary>
         /// Removes the first subscriber matching <see cref="Action{T}"/> from the subscribers' list.

@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -88,7 +86,7 @@ namespace LocalEventAggregator
         /// </summary>
         /// <param name="data">The item received from the source.</param>
         /// <returns>true if an item could be received; otherwise, false.</returns>
-        public bool TryReceive(out T data);
+        bool TryReceive(out T data);
 
         /// <summary>
         /// Receives all the events from the buffer(if buffered was true during creations), 
@@ -96,6 +94,6 @@ namespace LocalEventAggregator
         /// </summary>
         /// <param name="collection">The item collection received from the source.</param>
         /// <returns>true if an item could be received; otherwise, false.</returns>
-        public int TryReceiveAll(ICollection<T> collection);
+        int TryReceiveAll(ICollection<T> collection);
     }
 }

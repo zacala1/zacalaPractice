@@ -5,7 +5,7 @@ namespace LocalEventAggregator
 {
     public class EventAggregator : IEventAggregator
     {
-        private readonly Dictionary<Type, EventKeyBase> _events = new();
+        private readonly Dictionary<Type, EventKeyBase> _events = new Dictionary<Type, EventKeyBase>();
 
         public TEventType GetEvent<TEventType>() where TEventType : EventKeyBase, new()
         {
@@ -13,7 +13,7 @@ namespace LocalEventAggregator
             {
                 if (!_events.TryGetValue(typeof(TEventType), out var existingEvent))
                 {
-                    TEventType newEvent = new();
+                    TEventType newEvent = new TEventType();
                     
                     _events[typeof(TEventType)] = newEvent;
 

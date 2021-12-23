@@ -13,7 +13,7 @@ namespace LocalEventAggregator
     /// Event subscriber. It must be disposed when it unsubscribes or deletes
     /// </summary>
     /// <typeparam name="T">The type of data the <see cref="EventBase{T}"/> will send</typeparam>
-    public sealed class EventReceiver<T> : EventReceiver, IEventReceiver<T>
+    public class EventReceiver<T> : EventReceiver, IEventReceiver<T>
     {
         private IDisposable link;
 
