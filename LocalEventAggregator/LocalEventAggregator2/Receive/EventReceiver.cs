@@ -13,22 +13,22 @@ namespace LocalEventAggregator
     /// Event subscriber. It must be disposed when it unsubscribes or deletes
     /// </summary>
     /// <typeparam name="T">The type of data the <see cref="EventBase{T}"/> will send</typeparam>
-    public sealed class EventSubscriber<T> : EventSubscriber, IEventSubscriber<T>, IDisposable
+    public sealed class EventReceiver<T> : EventReceiver, IEventReceiver<T>
     {
-        private readonly IDisposable link;
+        private IDisposable link;
 
         internal BufferBlock<T> BufferBlock;
 
         public EventBase<T> Key { get; private set; }
 
         // ReSharper disable once StaticMemberInGenericType
-        private static readonly DataflowBlockOptions CapacityOptions = new()
+        private static readonly DataflowBlockOptions CapacityOptions = new DataflowBlockOptions
         {
             BoundedCapacity = 1,
             TaskScheduler = EventTaskScheduler.Scheduler,
         };
 
-        internal EventSubscriber(EventBase<T> key, EventReceiverOptions options = EventReceiverOptions.None)
+        internal EventReceiver(EventBase<T> key, EventReceiverOptions options = EventReceiverOptions.None)
         {
             Key = key;
 
@@ -83,7 +83,7 @@ namespace LocalEventAggregator
         {
             if (BufferBlock.Count == 0)
             {
-                data = default;
+                data = default(T);
                 return false;
             }
 
@@ -116,10 +116,11 @@ namespace LocalEventAggregator
         public void Reset()
         {
             //consume all in one go
-            BufferBlock.TryReceiveAll(out _);
+            IList<T> result;
+            BufferBlock.TryReceiveAll(out result);
         }
 
-        ~EventSubscriber()
+        ~EventReceiver()
         {
             Dispose();
         }
@@ -138,7 +139,8 @@ namespace LocalEventAggregator
 
         internal override bool TryReceiveOneInternal(out object obj)
         {
-            if (!TryReceive(out var res))
+            T res;
+            if (!TryReceive(out res))
             {
                 obj = null;
                 return false;
@@ -152,7 +154,7 @@ namespace LocalEventAggregator
     /// <summary>
     /// Base class for EventReceivers
     /// </summary>
-    public abstract class EventSubscriber
+    public abstract class EventReceiver
     {
         internal abstract Task<bool> GetPeakTask();
 
@@ -163,7 +165,7 @@ namespace LocalEventAggregator
         /// </summary>
         /// <param name="events">The events you want to listen to</param>
         /// <returns></returns>
-        public static async Task<EventData> ReceiveOne(params EventSubscriber[] events)
+        public static async Task<EventData> ReceiveOne(params EventReceiver[] events)
         {
             while (true)
             {

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace LocalEventAggregator
 {
-    public interface IEventSubscriber<T> : IDisposable
+    public interface IEventReceiver<T> : IDisposable
     {
         /// <summary>
         /// Clears all currently buffered events.

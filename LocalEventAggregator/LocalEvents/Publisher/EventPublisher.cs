@@ -2,30 +2,28 @@
 // Distributed under the MIT license. See the LICENSE.md file in the project root for more information.
 #pragma warning disable SA1402 // File may only contain a single type
 using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
-namespace LocalEventAggregator
+namespace LocalEvents
 {
     /// <summary>
     /// Event publisher. It must be disposed when it unsubscribes or deletes
     /// </summary>
     /// <typeparam name="T">The type of data the <see cref="EventBase{T}"/> will send</typeparam>
-    public sealed class EventPublisher<T> : IEventPublisher<T>, IDisposable
+    public sealed class EventPublisher<T> : IEventPublisher<T>
     {
-        private IDisposable link;
+        private readonly IDisposable link;
 
-        internal BroadcastBlock<T> BroadcastBlock;
+        internal BroadcastBlock<T> BroadcastBlock { get; }
 
         public EventBase<T> Key { get; private set; }
 
         internal EventPublisher(EventBase<T> key)
         {
             Key = key;
-            
-            BroadcastBlock = new BroadcastBlock<T>(null, new DataflowBlockOptions { TaskScheduler = EventTaskScheduler.Scheduler });
 
+            BroadcastBlock = new BroadcastBlock<T>(null, new DataflowBlockOptions { TaskScheduler = EventTaskScheduler.Scheduler });
+            
             link = key.Connect(this);
         }
 

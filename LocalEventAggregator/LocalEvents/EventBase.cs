@@ -1,10 +1,12 @@
 // Copyright (c) .NET Foundation and Contributors (https://dotnetfoundation.org/ & https://stride3d.net) and Silicon Studio Corp. (https://www.siliconstudio.co.jp)
 // Distributed under the MIT license. See the LICENSE.md file in the project root for more information.
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks.Dataflow;
 
-namespace LocalEventAggregator
+namespace LocalEvents
 {
     /// <summary>
     /// Creates a new EventKey used to broadcast T type events.
@@ -14,9 +16,24 @@ namespace LocalEventAggregator
     {
         private readonly BroadcastBlock<T> broadcastBlock;
 
+        private readonly List<IEventPublisher<T>> _pubs;
+        private readonly List<IEventSubscriber<T>> _subs;
+        private readonly List<IEventSubscribeHandler<T>> _suhs;
+        private readonly List<IEventSubscription> _subscriptions;
+
+        /// <summary>
+        /// Gets the list of current subscriptions.
+        /// </summary>
+        /// <value>The current subscribers.</value>
+        protected ICollection<IEventSubscription> Subscriptions
+        {
+            get { return _subscriptions; }
+        }
+
         public EventBase()
         {
             broadcastBlock = new BroadcastBlock<T>(null, new DataflowBlockOptions { TaskScheduler = EventTaskScheduler.Scheduler });
+            _subscriptions = new List<IEventSubscription>();
         }
 
         /// <summary>
@@ -50,18 +67,9 @@ namespace LocalEventAggregator
         /// <returns>An System.IDisposable that, upon calling Dispose, 
         /// will unlink the source from the target.</returns>
         /// <exception cref="System.ArgumentNullException">The source is null. -or- The target is null.</exception>
-        internal IDisposable Connect(EventReceiver<T> target)
+        internal IDisposable Connect(EventSubscriber<T> target)
         {
             return broadcastBlock.LinkTo(target.BufferBlock);
-        }
-
-        /// <summary>
-        /// Posts an item to the System.Threading.Tasks.Dataflow.ITargetBlock`1.
-        /// </summary>
-        /// <param name="data">The item being offered to the target.</param>
-        public void Broadcast(T data)
-        {
-            broadcastBlock.Post(data);
         }
 
         /// <summary>
@@ -78,9 +86,9 @@ namespace LocalEventAggregator
         /// </summary>
         /// <param name="options"></param>
         /// <returns>The event subscriber instance</returns>
-        public IEventReceiver<T> GetSubscriber(EventReceiverOptions options = EventReceiverOptions.Buffered)
+        public IEventSubscriber<T> GetSubscriber(EventReceiverOptions options = EventReceiverOptions.Buffered)
         {
-            return new EventReceiver<T>(this, options);
+            return new EventSubscriber<T>(this, options);
         }
 
         /// <summary>
@@ -88,10 +96,76 @@ namespace LocalEventAggregator
         /// </summary>
         /// <param name="action">handled action</param>
         /// <param name="options"></param>
-        /// <returns>The event subscribe handler</returns>
-        public IEventSubscribeHandler<T> GetSubscribeHandle(Action<T> action, EventReceiverOptions options = EventReceiverOptions.None)
+        /// <returns></returns>
+        private IEventSubscribeHandler<T> GetSubscribeHandler(Action<T> action, EventReceiverOptions options = EventReceiverOptions.None)
         {
             return new EventSubscribeHandler<T>(this, action, options);
+        }
+
+        /// <summary>
+        /// Posts an item to the System.Threading.Tasks.Dataflow.ITargetBlock`1.
+        /// </summary>
+        /// <param name="data">The item being offered to the target.</param>
+        public void Publish(T data)
+        {
+            broadcastBlock.Post(data);
+        }
+
+        public IEventSubscribeHandler<T> Subscribe(Action<T> action)
+        {
+            var subscription = GetSubscribeHandler(action);
+            lock (_suhs)
+            {
+                _suhs.Add(subscription);
+            }
+            return subscription;
+        }
+
+        public void Unsubscribe(IEventSubscribeHandler<T> subscription)
+        {
+            lock (Subscriptions)
+            {
+                IEventSubscribeHandler<T> sub = Subscriptions.Cast<EventSubscribeHandler<T>>().FirstOrDefault(evt => { return evt == subscription; });
+                if (sub != null)
+                {
+                    Subscriptions.Remove(sub);
+                    sub.Dispose();
+                }
+            }
+        }
+
+        public void Unsubscribe(Action<T> subscription)
+        {
+            lock (Subscriptions)
+            {
+                IEventSubscribeHandler<T> sub = Subscriptions.Cast<EventSubscribeHandler<T>>().FirstOrDefault(evt => { return evt.Action == subscription; });
+                if (sub != null)
+                {
+                    Subscriptions.Remove(sub);
+                    sub.Dispose();
+                }
+            }
+        }
+
+        public bool Contains(IEventSubscription subscription)
+        {
+            lock (Subscriptions)
+            {
+                return Subscriptions.Contains(subscription);
+            }
+        }
+
+        public void ClearConnection()
+        {
+            lock (Subscriptions)
+            {
+                for (var i = Subscriptions.Count - 1; i >= 0; i--)
+                {
+                    var sub = _subscriptions[i];
+                    _subscriptions.RemoveAt(i);
+                    sub.Dispose();
+                }
+            }
         }
     }
 

@@ -10,7 +10,7 @@ namespace LocalEventAggregator
     /// Creates a new EventKey used to broadcast T type events.
     /// </summary>
     /// <typeparam name="T">The data type of the event you wish to send</typeparam>
-    public abstract class EventBase<T> : EventKeyBase, IEventSubscribeHandler<T>, IDisposable
+    public abstract class EventBase<T> : EventKeyBase
     {
         private readonly BroadcastBlock<T> broadcastBlock;
         private readonly IEventSubscribeHandler<T> eventSubscribeHandler;
@@ -18,18 +18,12 @@ namespace LocalEventAggregator
         public EventBase()
         {
             broadcastBlock = new BroadcastBlock<T>(null, new DataflowBlockOptions { TaskScheduler = EventTaskScheduler.Scheduler });
-            eventSubscribeHandler = new EventSubscribeHandler<T>(this);
+            eventSubscribeHandler = GetSubscribeHandler();
         }
 
-        ~EventBase()
+        internal void Close()
         {
-            Dispose();
-        }
-
-        public void Dispose()
-        {
-            eventSubscribeHandler.Dispose();
-            GC.SuppressFinalize(this);
+            eventSubscribeHandler?.Dispose();
         }
 
         /// <summary>
@@ -63,7 +57,7 @@ namespace LocalEventAggregator
         /// <returns>An System.IDisposable that, upon calling Dispose, 
         /// will unlink the source from the target.</returns>
         /// <exception cref="System.ArgumentNullException">The source is null. -or- The target is null.</exception>
-        internal IDisposable Connect(EventSubscriber<T> target)
+        internal IDisposable Connect(EventReceiver<T> target)
         {
             return broadcastBlock.LinkTo(target.BufferBlock);
         }
@@ -87,33 +81,67 @@ namespace LocalEventAggregator
         }
 
         /// <summary>
-        /// Gets the event subscriber
+        /// Gets the event receiver
         /// </summary>
         /// <param name="options"></param>
-        /// <returns>The event subscriber instance</returns>
-        public IEventSubscriber<T> GetSubscriber(EventReceiverOptions options = EventReceiverOptions.Buffered)
+        /// <returns>The event receiver instance</returns>
+        public IEventReceiver<T> GetReceiver(EventReceiverOptions options = EventReceiverOptions.Buffered)
         {
-            return new EventSubscriber<T>(this, options);
+            return new EventReceiver<T>(this, options);
         }
 
+        private IEventSubscribeHandler<T> GetSubscribeHandler()
+        {
+            return new EventSubscribeHandler<T>(this);
+        }
+
+        /// <summary>
+        /// Subscribes a delegate to an event that will be published
+        /// </summary>
+        /// <param name="action">The delegate that gets executed when the event is published.</param>
+        /// <returns>A <see cref="SubscriptionToken"/> that uniquely identifies the added subscription.</returns>
         public SubscriptionToken Subscribe(Action<T> action)
         {
             return eventSubscribeHandler.Subscribe(action);
         }
+
+        /// <summary>
+        /// Removes the subscriber matching the <see cref="SubscriptionToken"/>.
+        /// </summary>
+        /// <param name="token">The <see cref="SubscriptionToken"/> returned by <see cref="EventBase{T}"/> while subscribing to the event.</param>
 
         public void Unsubscribe(SubscriptionToken token)
         {
             eventSubscribeHandler.Unsubscribe(token);
         }
 
+        /// <summary>
+        /// Removes the first subscriber matching <see cref="Action{T}"/> from the subscribers' list.
+        /// </summary>
+        /// <param name="subscriber">The <see cref="Action{T}"/> used when subscribing to the event.</param>
+
         public void Unsubscribe(Action<T> subscriber)
         {
             eventSubscribeHandler.Unsubscribe(subscriber);
         }
 
+        /// <summary>
+        /// Returns <see langword="true"/> if there is a subscriber matching <see cref="Action{T}"/>.
+        /// </summary>
+        /// <param name="subscriber">The <see cref="Action{T}"/> used when subscribing to the event.</param>
+        /// <returns><see langword="true"/> if there is an <see cref="Action{T}"/> that matches; otherwise <see langword="false"/>.</returns>
+
         public bool Contains(Action<T> subscriber)
         {
             return eventSubscribeHandler.Contains(subscriber);
+        }
+
+        /// <summary>
+        /// Forces the PubSubEvent to remove any subscriptions that no longer have an execution strategy.
+        /// </summary>
+        public void Prune()
+        {
+            eventSubscribeHandler.Prune();
         }
     }
 

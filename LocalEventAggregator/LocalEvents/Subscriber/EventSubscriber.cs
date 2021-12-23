@@ -7,22 +7,22 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
-namespace LocalEventAggregator
+namespace LocalEvents
 {
     /// <summary>
     /// Event subscriber. It must be disposed when it unsubscribes or deletes
     /// </summary>
     /// <typeparam name="T">The type of data the <see cref="EventBase{T}"/> will send</typeparam>
-    public sealed class EventSubscriber<T> : EventSubscriber, IEventSubscriber<T>, IDisposable
+    public sealed class EventSubscriber<T> : EventSubscriber, IEventSubscriber<T>
     {
-        private IDisposable link;
+        private readonly IDisposable link;
 
-        internal BufferBlock<T> BufferBlock;
+        internal BufferBlock<T> BufferBlock { get; }
 
         public EventBase<T> Key { get; private set; }
 
         // ReSharper disable once StaticMemberInGenericType
-        private static readonly DataflowBlockOptions CapacityOptions = new DataflowBlockOptions
+        private static readonly DataflowBlockOptions CapacityOptions = new DataflowBlockOptions()
         {
             BoundedCapacity = 1,
             TaskScheduler = EventTaskScheduler.Scheduler,
@@ -62,7 +62,7 @@ namespace LocalEventAggregator
             return res;
         }
 
-        public async Task<T> ReceiveAsync<TOutput>(TimeSpan timeout, CancellationToken cancellationToken)
+        public async Task<T> ReceiveAsync(TimeSpan timeout, CancellationToken cancellationToken)
         {
             var res = await BufferBlock.ReceiveAsync(timeout, cancellationToken);
 
@@ -83,7 +83,7 @@ namespace LocalEventAggregator
         {
             if (BufferBlock.Count == 0)
             {
-                data = default(T);
+                data = default;
                 return false;
             }
 
@@ -116,8 +116,7 @@ namespace LocalEventAggregator
         public void Reset()
         {
             //consume all in one go
-            IList<T> result;
-            BufferBlock.TryReceiveAll(out result);
+            BufferBlock.TryReceiveAll(out _);
         }
 
         ~EventSubscriber()
@@ -139,8 +138,7 @@ namespace LocalEventAggregator
 
         internal override bool TryReceiveOneInternal(out object obj)
         {
-            T res;
-            if (!TryReceive(out res))
+            if (!TryReceive(out var res))
             {
                 obj = null;
                 return false;

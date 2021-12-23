@@ -6,17 +6,19 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
-namespace LocalEventAggregator
+namespace LocalEvents
 {
     /// <summary>
     /// Event subscribe handler. It must be disposed when it unsubscribes or deletes
     /// </summary>
     /// <typeparam name="T">The type of data the <see cref="EventBase{T}"/> will send</typeparam>
-    public sealed class EventSubscribeHandler<T> : IEventSubscribeHandler<T>, IDisposable
+    public sealed class EventSubscribeHandler<T> : IEventSubscribeHandler<T>
     {
-        private IDisposable link;
+        private readonly IDisposable link;
 
-        internal ActionBlock<T> ActionBlock;
+        internal ActionBlock<T> ActionBlock { get; }
+
+        public Action<T> Action { get; }
 
         public EventBase<T> Key { get; private set; }
 
@@ -30,6 +32,7 @@ namespace LocalEventAggregator
         internal EventSubscribeHandler(EventBase<T> key, Action<T> action, EventReceiverOptions options = EventReceiverOptions.None)
         {
             Key = key;
+            Action = action;
             Action<T> blockAction = (x) => { }; //clear any previous event, we don't want to receive old events, as broadcast block will always send us the last avail event on connect
             ActionBlock = options.HasFlag(EventReceiverOptions.Buffered) ?
                 new ActionBlock<T>((x) => blockAction(x), new ExecutionDataflowBlockOptions { TaskScheduler = EventTaskScheduler.Scheduler }) :

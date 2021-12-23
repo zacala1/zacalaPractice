@@ -36,7 +36,7 @@ namespace LocalEventAggregator
     /// </summary>
     public struct EventData
     {
-        public EventSubscriber Receiver { get; internal set; }
+        public EventReceiver Receiver { get; internal set; }
 
         public object Data { get; internal set; }
     }

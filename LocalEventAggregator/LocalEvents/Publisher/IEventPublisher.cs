@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LocalEventAggregator
+namespace LocalEvents
 {
-    public interface IEventPublisher<T> : IDisposable
+    public interface IEventPublisher<T> : IEventSubscription, IDisposable
     {
         /// <summary>
         /// Publishs an item to the System.Threading.Tasks.Dataflow.ITargetBlock`1.
